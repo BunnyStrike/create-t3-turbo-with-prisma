@@ -2,6 +2,7 @@
   "name": "@acme/db",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
@@ -17,23 +18,20 @@
       "default": "./src/schema.ts"
     }
   },
-  "license": "MIT",
-  "prisma": {
-    "schema": "./src/schema.prisma"
-  },
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "tsc",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "lint": "eslint",
     "generate": "pnpm with-env prisma generate",
+    "postinstall": "pnpm generate",
+    "lint": "eslint",
     "push": "pnpm with-env prisma db push --skip-generate",
     "studio": "pnpm with-env prisma studio --port 5556",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "with-env": "dotenv -e ../../.env --",
-    "postinstall": "pnpm generate"
+    "with-env": "dotenv -e ../../.env --"
   },
+  "prettier": "@acme/prettier-config",
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "@prisma/extension-accelerate": "^1.1.0",
@@ -51,5 +49,7 @@
     "prisma": "^5.18.0",
     "typescript": "catalog:"
   },
-  "prettier": "@acme/prettier-config"
+  "prisma": {
+    "schema": "./src/schema.prisma"
+  }
 }

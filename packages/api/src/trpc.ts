@@ -6,24 +6,26 @@
  * tl;dr - this is where all the tRPC server stuff is created and plugged in.
  * The pieces you will need to use are documented accordingly near the end
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session } from "@acme/auth";
-import { auth, validateToken } from "@acme/auth";
-import { db } from "@acme/db";
+// import type { Session } from "@gr/auth";
+// import { auth, validateToken } from "@gr/auth";
+import { db } from "@gr/db";
 
 /**
  * Isomorphic Session getter for API requests
  * - Expo requests will have a session token in the Authorization header
  * - Next.js requests will have a session token in cookies
  */
-const isomorphicGetSession = async (headers: Headers) => {
-  const authToken = headers.get("Authorization") ?? null;
-  if (authToken) return validateToken(authToken);
-  return auth();
-};
+// const isomorphicGetSession = async (headers: Headers) => {
+//   const authToken = headers.get("Authorization") ?? null;
+//   if (authToken) return validateToken(authToken);
+//   return auth();
+// };
 
 /**
  * 1. CONTEXT
@@ -39,18 +41,24 @@ const isomorphicGetSession = async (headers: Headers) => {
  */
 export const createTRPCContext = async (opts: {
   headers: Headers;
-  session: Session | null;
+  // session: Session | null;
+  supabase: SupabaseClient;
 }) => {
-  const authToken = opts.headers.get("Authorization") ?? null;
-  const session = await isomorphicGetSession(opts.headers);
+  const supabase = opts.supabase;
+  const token = opts.headers.get("Authorization") ?? undefined;
+  // const session = await isomorphicGetSession(opts.headers);
+
+  const user = token
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
 
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
-  console.log(">>> tRPC Request from", source, "by", session?.user);
+  // console.log(">>> tRPC Request from", source, "by", session?.user);
+  console.log(">>> tRPC Request from", source, "by", user.data.user?.email);
 
   return {
-    session,
+    user: user.data.user,
     db,
-    token: authToken,
   };
 };
 
@@ -123,6 +131,22 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 export const publicProcedure = t.procedure.use(timingMiddleware);
 
 /**
+ * Reusable middleware that enforces users are logged in before running the
+ * procedure
+ */
+const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+  if (!ctx.user?.id) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({
+    ctx: {
+      // infers the `user` as non-nullable
+      user: ctx.user,
+    },
+  });
+});
+
+/**
  * Protected (authenticated) procedure
  *
  * If you want a query or mutation to ONLY be accessible to logged in users, use this. It verifies
@@ -130,16 +154,18 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  *
  * @see https://trpc.io/docs/procedures
  */
-export const protectedProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
-      },
-    });
-  });
+// export const protectedProcedure = t.procedure
+//   .use(timingMiddleware)
+//   .use(({ ctx, next }) => {
+//     if (!ctx.session?.user) {
+//       throw new TRPCError({ code: "UNAUTHORIZED" });
+//     }
+//     return next({
+//       ctx: {
+//         // infers the `session` as non-nullable
+//         session: { ...ctx.session, user: ctx.session.user },
+//       },
+//     });
+//   });
+
+export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);

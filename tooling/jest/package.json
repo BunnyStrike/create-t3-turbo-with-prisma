@@ -1,38 +1,30 @@
 {
-  "name": "@acme/api",
+  "name": "@acme/jest",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
-    }
+    "./base": "./base.js",
+    "./native": "./base.js",
+    "./web": "./base.js"
   },
   "scripts": {
-    "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev": "tsc",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "prettier": "@acme/prettier-config",
-  "dependencies": {
-    "@acme/db": "workspace:*",
-    "@acme/validators": "workspace:*",
-    "@supabase/supabase-js": "^2.45.3",
-    "@trpc/server": "catalog:",
-    "superjson": "2.2.1",
-    "zod": "catalog:"
-  },
   "devDependencies": {
     "@acme/eslint-config": "workspace:*",
     "@acme/prettier-config": "workspace:*",
     "@acme/tsconfig": "workspace:*",
+    "@types/jest": "catalog:jest29",
     "eslint": "catalog:",
+    "jest": "catalog:jest29",
     "prettier": "catalog:",
+    "ts-jest": "catalog:jest29",
     "typescript": "catalog:"
   }
 }
